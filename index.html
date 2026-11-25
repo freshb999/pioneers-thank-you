@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Thanking Our Pioneers</title>
+<meta name="description" content="Record a thank-you message for the pioneers of Lansing West Congregation.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pioneers">
+<meta name="theme-color" content="#f6f1e7">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f1e7; --panel: #fffdf8; --ink: #2d2a24; --muted: #7d7466; --line: #e4dccb;
+    --gold: #a8843f; --green: #4f6b4a; --green-d: #3e5639; --red: #b0483c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 Inter, system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
+  body { min-height: 100vh; min-height: 100dvh; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 24px 16px calc(32px + env(safe-area-inset-bottom)); }
+  .kiosk .wrap { max-width: 980px; padding: 28px 40px; }
+  header { text-align: center; margin: 6px 0 18px; }
+  .sun { width: 84px; height: 42px; display: block; margin: 0 auto 6px; }
+  h1 { font: 600 2.3rem/1.05 'Cormorant Garamond', Georgia, serif; margin: 0; letter-spacing: .01em; }
+  .kiosk h1 { font-size: 3.4rem; }
+  .sub { font: italic 500 1.2rem 'Cormorant Garamond', Georgia, serif; color: var(--gold); margin-top: 4px; }
+  .kiosk .sub { font-size: 1.6rem; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; box-shadow: 0 1px 0 rgba(0,0,0,.02); }
+  p.lead { margin: 0 0 16px; color: var(--ink); }
+  .kiosk p.lead { font-size: 1.3rem; text-align: center; }
+  label.f { display: block; font-weight: 500; font-size: .92rem; margin: 12px 0 6px; }
+  input[type=text] { width: 100%; font: inherit; font-size: 17px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); }
+  input[type=text]:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; border: 0; border-radius: 14px; padding: 16px 18px; font: 600 1.05rem Inter, sans-serif;
+         cursor: pointer; margin-top: 12px; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+  .btn.primary { background: var(--green); color: #fff; } .btn.primary:active { background: var(--green-d); }
+  .btn.ghost { background: transparent; color: var(--green); border: 1.5px solid var(--green); }
+  .btn.quiet { background: transparent; color: var(--muted); font-weight: 500; padding: 10px; }
+  .btn:disabled { opacity: .5; }
+  .kiosk .btn { font-size: 1.5rem; padding: 24px; border-radius: 20px; }
+  .note { color: var(--muted); font-size: .85rem; margin-top: 14px; text-align: center; }
+  .hidden { display: none !important; }
+  .row { display: flex; gap: 12px; } .row > * { flex: 1; }
+
+  /* camera */
+  .stage { position: relative; background: #111; border-radius: 18px; overflow: hidden; aspect-ratio: 3/4; }
+  .kiosk .stage { aspect-ratio: 16/9; }
+  .stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .stage video.mirror { transform: scaleX(-1); }
+  .count { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 600 9rem 'Cormorant Garamond', serif; color: #fff;
+           text-shadow: 0 4px 30px rgba(0,0,0,.5); pointer-events: none; }
+  .recdot { position: absolute; top: 14px; left: 14px; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,.55); color: #fff; padding: 6px 12px;
+            border-radius: 99px; font-weight: 600; font-size: .95rem; }
+  .recdot i { width: 10px; height: 10px; border-radius: 50%; background: #ff4b3e; animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+  .bar { position: absolute; left: 0; bottom: 0; height: 6px; background: var(--gold); width: 0; transition: width .25s linear; }
+  .tip { position: absolute; bottom: 16px; left: 0; right: 0; text-align: center; color: #fff; font-size: 1rem; text-shadow: 0 1px 6px rgba(0,0,0,.7); padding: 0 12px; }
+  .kiosk .tip { font-size: 1.4rem; }
+
+  /* progress */
+  .prog { height: 12px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 18px 0 8px; }
+  .prog > div { height: 100%; width: 0; background: var(--green); transition: width .3s; }
+  .center { text-align: center; }
+  .big { font: 600 2rem 'Cormorant Garamond', serif; margin: 6px 0 8px; }
+  .kiosk .big { font-size: 3rem; }
+  .thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; }
+  .thumbs img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+  .qr { display: flex; align-items: center; gap: 18px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .qr #qrcode { background: #fff; padding: 8px; border-radius: 10px; flex: none; }
+  .qr div.t { font-size: 1.15rem; color: var(--muted); }
+  .err { color: var(--red); font-weight: 500; margin-top: 10px; }
+  .admin { position: fixed; top: 0; left: 0; width: 70px; height: 70px; }
+</style>
+</head>
+<body class="kiosk">
+<div class="wrap">
+  <header>
+    <svg class="sun" viewBox="0 0 84 42" aria-hidden="true">
+      <path d="M12 40a30 30 0 0 1 60 0" fill="none" stroke="#a8843f" stroke-width="2.2"/>
+      <g stroke="#a8843f" stroke-width="2" stroke-linecap="round">
+        <line x1="42" y1="2" x2="42" y2="7"/><line x1="18" y1="12" x2="21.5" y2="15.5"/><line x1="66" y1="12" x2="62.5" y2="15.5"/>
+        <line x1="4" y1="30" x2="9" y2="31"/><line x1="80" y1="30" x2="75" y2="31"/></g>
+      <line x1="0" y1="40.5" x2="84" y2="40.5" stroke="#4f6b4a" stroke-width="2"/>
+    </svg>
+    <h1>Thanking Our Pioneers</h1>
+    <div class="sub">Lansing West Congregation</div>
+  </header>
+
+  <!-- 1. welcome -->
+  <section id="s-welcome" class="card">
+    <p class="lead" id="intro"></p>
+    <label class="f" for="name">Your name<span id="nameOpt"> (optional)</span></label>
+    <input type="text" id="name" autocomplete="name" placeholder="e.g. Sister Johnson">
+    <label class="f" for="forWho">Who is your message for? <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+    <input type="text" id="forWho" placeholder="A pioneer's name, or all the pioneers">
+    <div id="welcomeErr" class="err hidden"></div>
+    <button class="btn primary" id="bRecord">● Record a video message</button>
+    <div id="phoneExtras">
+      <label class="btn ghost" for="pickVideo">Upload a video I already made</label>
+      <label class="btn ghost" for="pickPhotos">Share photos for the video</label>
+    </div>
+    <div class="note">Your message and photos go privately to Branson, only for the pioneers' thank-you video.</div>
+    <div class="qr hidden" id="qrBox"><div id="qrcode"></div><div class="t"><b style="color:var(--ink)">Rather use your phone?</b><br>Scan this to record a message at home or share photos.</div></div>
+  </section>
+
+  <!-- 2. camera -->
+  <section id="s-camera" class="hidden">
+    <div class="stage">
+      <video id="live" class="mirror" playsinline autoplay muted></video>
+      <div class="count hidden" id="count">3</div>
+      <div class="recdot hidden" id="recdot"><i></i><span id="clock">0:00</span></div>
+      <div class="bar" id="bar"></div>
+      <div class="tip" id="tip">Look at the screen and speak from the heart.</div>
+    </div>
+    <button class="btn primary" id="bStart">● Start recording</button>
+    <button class="btn primary hidden" id="bStop">■ I'm done</button>
+    <button class="btn quiet" id="bCancel">Cancel</button>
+  </section>
+
+  <!-- 2b. native camera fallback -->
+  <section id="s-native" class="card hidden center">
+    <p class="lead">Tap below to open your camera. Record your message, then tap <b>Use Video</b>.</p>
+    <label class="btn primary" for="nativeCam">● Open camera</label>
+    <button class="btn quiet" onclick="home()">Cancel</button>
+  </section>
+
+  <!-- 3. review -->
+  <section id="s-review" class="hidden">
+    <div class="stage"><video id="playback" playsinline controls></video></div>
+    <div class="row">
+      <button class="btn ghost" id="bRedo">↺ Record again</button>
+      <button class="btn primary" id="bSend">Send message ✓</button>
+    </div>
+  </section>
+
+  <!-- 4. sending -->
+  <section id="s-sending" class="card hidden center">
+    <div class="big" id="sendTitle">Sending…</div>
+    <div id="sendWhat" style="color:var(--muted)"></div>
+    <div class="prog"><div id="progBar"></div></div>
+    <div id="progPct" style="color:var(--muted)">0%</div>
+    <div class="thumbs" id="thumbs"></div>
+    <div class="note">Please keep this page open until it says thank you.</div>
+  </section>
+
+  <!-- 5. done -->
+  <section id="s-done" class="card hidden center">
+    <div class="big">Thank you!</div>
+    <p class="lead" id="doneMsg">Your message was received. The pioneers are going to love it.</p>
+    <div id="doneBtns">
+      <button class="btn primary" id="bMore">Send another message</button>
+      <label class="btn ghost" for="pickPhotos">Share photos too</label>
+    </div>
+    <div class="note" id="resetNote"></div>
+  </section>
+
+  <!-- error -->
+  <section id="s-error" class="card hidden center">
+    <div class="big" style="color:var(--red)">Something went wrong</div>
+    <p class="lead" id="errMsg"></p>
+    <button class="btn primary" id="bRetry">Try again</button>
+    <button class="btn quiet" onclick="home()">Start over</button>
+  </section>
+</div>
+
+<input type="file" id="pickVideo" accept="video/*" class="hidden">
+<input type="file" id="pickPhotos" accept="image/*" multiple class="hidden">
+<input type="file" id="nativeCam" accept="video/*" capture="user" class="hidden">
+<div class="admin" id="admin"></div>
+
+<script>
+// Stand-alone iPad app (11/25): hosted outside Google so it can use the camera -> live preview, 3-2-1, redo.
+// Uploads go to the same Google Apps Script (doPost) -> Branson's Drive.  ?phone=1 = phone layout.
+const KIOSK = !new URLSearchParams(location.search).has('phone');
+document.body.className = KIOSK ? 'kiosk' : 'phone';
+const APP_URL = "https://script.google.com/macros/s/AKfycbz18UK-5zM0intdjrF55_Hy8BR1ozHf693qC8G6SvExIcDvbfIwVTweNYuTUdk7J_145w/exec";
+const MAX = 90;
+const $ = id => document.getElementById(id);
+const SCREENS = ['welcome', 'camera', 'native', 'review', 'sending', 'done', 'error'];
+let stream = null, rec = null, chunks = [], blob = null, mime = '', timer = null, t0 = 0, resetT = null, retryFn = null;
+
+function show(s) { SCREENS.forEach(n => $('s-' + n).classList.toggle('hidden', n !== s)); window.scrollTo(0, 0); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function fmt(s) { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function meta() { return { name: $('name').value.trim(), forWho: $('forWho').value.trim(), kiosk: KIOSK }; }
+
+// ---------- setup
+$('intro').textContent = KIOSK
+  ? 'Leave a short video message thanking our pioneers. Tap the button, get ready during the 3-2-1, and speak from the heart. About a minute is perfect. You can watch it back and record again before sending.'
+  : 'Record a short video message thanking our pioneers for their hard work, or share photos we can use in the video. You can watch it back and record again before sending.';
+if (KIOSK) {
+  $('phoneExtras').classList.add('hidden');
+  $('doneBtns').classList.add('hidden');
+  $('qrBox').classList.remove('hidden');
+  try { new QRCode($('qrcode'), { text: location.origin + location.pathname + '?phone=1', width: 150, height: 150, colorDark: '#2d2a24', colorLight: '#ffffff' }); } catch (e) { $('qrBox').classList.add('hidden'); }
+  keepAwake(); document.addEventListener('visibilitychange', () => { if (!document.hidden) keepAwake(); });
+} else {
+  $('nameOpt').textContent = '';
+  try { $('name').value = localStorage.getItem('pioneers_name') || ''; } catch (e) {}
+}
+async function keepAwake() { try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch (e) {} }
+
+function needName() {
+  if (KIOSK || $('name').value.trim()) { $('welcomeErr').classList.add('hidden'); try { localStorage.setItem('pioneers_name', $('name').value.trim()); } catch (e) {} return true; }
+  $('welcomeErr').textContent = 'Please add your name so Branson knows who it’s from.'; $('welcomeErr').classList.remove('hidden'); $('name').focus(); return false;
+}
+
+// ---------- camera
+// Google's page frame does not allow camera/mic access, so on Google hosting the Record button opens the
+// device's own camera app (better quality on phones anyway). Set INPAGE = true if this page is ever hosted elsewhere.
+const INPAGE = true;
+$('bRecord').onclick = async () => {
+  if (!needName()) return;
+  if (!INPAGE) { $('nativeCam').click(); return; }
+  if (stream) return showCamera();
+  try {
+    if (!navigator.mediaDevices || !window.MediaRecorder) throw new Error('no recorder');
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: KIOSK ? 1920 : 1280 }, height: { ideal: KIOSK ? 1080 : 720 }, frameRate: { ideal: 30 } },
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true }
+    });
+    $('live').srcObject = stream;
+    showCamera();
+  } catch (e) {
+    stream = null;
+    show('native');                         // camera blocked in this browser: use the phone's own camera app
+  }
+};
+function showCamera() {
+  $('bStart').classList.remove('hidden'); $('bStop').classList.add('hidden'); $('bCancel').classList.remove('hidden');
+  $('recdot').classList.add('hidden'); $('bar').style.width = '0'; $('tip').textContent = 'Look at the screen and speak from the heart.';
+  show('camera'); $('live').play().catch(() => {});
+}
+$('bStart').onclick = async () => {
+  $('bStart').classList.add('hidden'); $('bCancel').classList.add('hidden');
+  const c = $('count'); c.classList.remove('hidden');
+  for (const n of [3, 2, 1]) { c.textContent = n; await sleep(1000); }
+  c.classList.add('hidden');
+  const types = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+  mime = types.find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+  try { rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: KIOSK ? 6000000 : 3000000, audioBitsPerSecond: 160000 } : {}); }
+  catch (e) { rec = new MediaRecorder(stream); }
+  chunks = [];
+  rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  rec.onstop = () => {
+    clearInterval(timer);
+    blob = new Blob(chunks, { type: (rec.mimeType || mime || 'video/mp4').split(';')[0] });
+    $('playback').src = URL.createObjectURL(blob);
+    if (!KIOSK) stopStream();
+    show('review');
+    if (KIOSK) { clearTimeout(window._idle); window._idle = setTimeout(() => { if (!$('s-review').classList.contains('hidden')) home(); }, 180000); }
+  };
+  rec.start(1000);
+  t0 = Date.now(); $('recdot').classList.remove('hidden'); $('bStop').classList.remove('hidden');
+  $('tip').textContent = 'Recording… tap “I’m done” when you finish.';
+  timer = setInterval(() => {
+    const s = (Date.now() - t0) / 1000;
+    $('clock').textContent = fmt(s) + ' / ' + fmt(MAX);
+    $('bar').style.width = Math.min(100, s / MAX * 100) + '%';
+    if (s >= MAX) stopRec();
+  }, 250);
+};
+function stopRec() { if (rec && rec.state === 'recording') rec.stop(); }
+$('bStop').onclick = stopRec;
+$('bCancel').onclick = () => { if (!KIOSK) stopStream(); home(); };
+function stopStream() { if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; }
+$('bRedo').onclick = () => { URL.revokeObjectURL($('playback').src); blob = null; $('bRecord').onclick(); };
+$('bSend').onclick = () => { $('playback').pause(); sendVideo(blob, 'Your video message'); };
+
+// ---------- file pickers
+$('nativeCam').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) sendVideo(f, 'Your video message'); };
+$('pickVideo').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f && needName()) sendVideo(f, 'Your video'); else if (f) show('welcome'); };
+$('pickPhotos').onchange = e => { const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return; if (!needName()) { show('welcome'); return; } sendPhotos(fs); };
+
+// ---------- upload (4 MB pieces through the script into a Drive resumable upload)
+async function run(fn, ...args) {        // text/plain = no CORS preflight; Google answers through a redirect that allows any origin
+  const r = await fetch(APP_URL, { method: 'POST', body: JSON.stringify({ fn, args }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
+  if (!r.ok) throw new Error('The upload server did not answer (' + r.status + ').');
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'Upload failed.');
+  return j.result;
+}
+function b64(b) { return new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] || ''); r.onerror = () => no(r.error); r.readAsDataURL(b); }); }
+const PIECE = 4 * 1024 * 1024;   // multiple of 256 KB
+async function upload(file, m, onProg) {
+  if (!file || !file.size) throw new Error('The recording came out empty. Please try again.');
+  const type = (file.type || (m.kind === 'photo' ? 'image/jpeg' : 'video/mp4')).split(';')[0];
+  const s = await run('startUpload', Object.assign({}, m, { mime: type, size: file.size, fileName: file.name || '' }));
+  let off = 0, res = null, fails = 0;
+  while (off < file.size) {
+    const part = file.slice(off, Math.min(off + PIECE, file.size));
+    try {
+      res = await run('putChunk', s.id, await b64(part), off, file.size);
+      fails = 0;
+    } catch (e) {
+      if (++fails > 5) throw e;
+      await sleep(2000 * fails);
+      try { res = await run('uploadStatus', s.id, file.size); } catch (e2) { continue; }
+    }
+    if (res.done) { onProg(1); return res; }
+    off = res.received;
+    onProg(off / file.size);
+  }
+  return res;
+}
+function prog(f, label) {
+  $('progBar').style.width = Math.round(f * 100) + '%';
+  $('progPct').textContent = (label ? label + ' · ' : '') + Math.round(f * 100) + '%';
+}
+async function sendVideo(file, what) {
+  retryFn = () => sendVideo(file, what);
+  $('sendTitle').textContent = 'Sending…'; $('sendWhat').textContent = what + ' (' + (file.size / 1048576).toFixed(0) + ' MB)';
+  $('thumbs').innerHTML = ''; prog(0); show('sending');
+  try {
+    await upload(file, Object.assign(meta(), { kind: 'message' }), f => prog(f));
+    done('Your message was received. The pioneers are going to love it.');
+  } catch (e) { fail(e); }
+}
+async function sendPhotos(files) {
+  const todo = files.slice();
+  retryFn = () => sendPhotos(todo.slice());
+  $('sendTitle').textContent = 'Sending photos…'; $('thumbs').innerHTML = ''; prog(0); show('sending');
+  files.slice(0, 12).forEach(f => { const i = document.createElement('img'); i.src = URL.createObjectURL(f); $('thumbs').appendChild(i); });
+  const n = files.length;
+  try {
+    for (let k = 0; k < n; k++) {
+      $('sendWhat').textContent = 'Photo ' + (k + 1) + ' of ' + n;
+      await upload(files[k], Object.assign(meta(), { kind: 'photo', n: k + 1 }), f => prog((k + f) / n, 'Photo ' + (k + 1) + ' of ' + n));
+      todo.shift();
+    }
+    done(n === 1 ? 'Your photo was received. Thank you!' : 'All ' + n + ' photos were received. Thank you!');
+  } catch (e) { fail(e); }
+}
+function done(msg) {
+  $('doneMsg').textContent = msg; show('done');
+  if (KIOSK) {
+    let left = 8; $('resetNote').textContent = 'Starting over in ' + left + '…';
+    clearInterval(resetT); resetT = setInterval(() => { left--; $('resetNote').textContent = 'Starting over in ' + left + '…'; if (left <= 0) home(); }, 1000);
+  }
+}
+function fail(e) {
+  $('errMsg').textContent = (e && e.message ? e.message : String(e)) + ' Check your internet connection and try again.';
+  show('error');
+}
+$('bRetry').onclick = () => retryFn ? retryFn() : home();
+$('bMore').onclick = () => home();
+function home() {
+  clearInterval(resetT); clearInterval(timer); $('resetNote').textContent = '';
+  if (KIOSK) { $('name').value = ''; $('forWho').value = ''; }
+  blob = null; show('welcome');
+}
+
+// kiosk: hold the top-left corner 3 s to reload (e.g. after the camera was unplugged)
+let holdT = null;
+$('admin').addEventListener('touchstart', () => { holdT = setTimeout(() => location.reload(), 3000); }, { passive: true });
+$('admin').addEventListener('touchend', () => clearTimeout(holdT));
+</script>
+</body>
+</html>
