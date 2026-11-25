@@ -77,6 +77,12 @@
   .qr div.t { font-size: 1.15rem; color: var(--muted); }
   .err { color: var(--red); font-weight: 500; margin-top: 10px; }
   .admin { position: fixed; top: 0; left: 0; width: 70px; height: 70px; }
+  .msgs { margin-top: 14px; border-top: 1px solid var(--line); }
+  .msg { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 1rem; }
+  .msg .w { flex: 1; min-width: 0; } .msg .w b { display: block; } .msg .w span { color: var(--muted); font-size: .85rem; }
+  .msg .btn { width: auto; margin: 0; padding: 10px 14px; font-size: .95rem; border-radius: 12px; }
+  .kiosk .msg .btn { font-size: .95rem; padding: 10px 14px; }
+  .pill { font-size: .75rem; color: var(--green); border: 1px solid var(--green); border-radius: 99px; padding: 1px 8px; margin-left: 6px; }
 </style>
 </head>
 <body class="kiosk">
@@ -162,6 +168,19 @@
   </section>
 
   <!-- error -->
+  <!-- 6. admin (hold the top-left corner 3 s, PIN 2611): the messages saved on this iPad -->
+  <section id="s-admin" class="card hidden">
+    <div class="big" style="text-align:center">Saved messages</div>
+    <div id="aSum" class="center" style="color:var(--muted)"></div>
+    <button class="btn primary" id="aShareAll">Save all to the iPad (Photos / Files)</button>
+    <button class="btn ghost" id="aUpload">Also upload all to Google Drive</button>
+    <div id="aProg" class="note"></div>
+    <div class="msgs" id="aList"></div>
+    <button class="btn quiet" id="aDelDone">Delete messages already saved to Photos / Files</button>
+    <button class="btn quiet" id="aReload">Reload the app</button>
+    <button class="btn primary" id="aClose">Close</button>
+  </section>
+
   <section id="s-error" class="card hidden center">
     <div class="big" style="color:var(--red)">Something went wrong</div>
     <p class="lead" id="errMsg"></p>
@@ -183,7 +202,7 @@ document.body.className = KIOSK ? 'kiosk' : 'phone';
 const APP_URL = "https://script.google.com/macros/s/AKfycbz18UK-5zM0intdjrF55_Hy8BR1ozHf693qC8G6SvExIcDvbfIwVTweNYuTUdk7J_145w/exec";
 const MAX = 90;
 const $ = id => document.getElementById(id);
-const SCREENS = ['welcome', 'camera', 'native', 'review', 'sending', 'done', 'error'];
+const SCREENS = ['welcome', 'camera', 'native', 'review', 'sending', 'done', 'error', 'admin'];
 let stream = null, rec = null, chunks = [], blob = null, mime = '', timer = null, t0 = 0, resetT = null, retryFn = null;
 
 function show(s) { SCREENS.forEach(n => $('s-' + n).classList.toggle('hidden', n !== s)); window.scrollTo(0, 0); }
@@ -193,14 +212,17 @@ function meta() { return { name: $('name').value.trim(), forWho: $('forWho').val
 
 // ---------- setup
 $('intro').textContent = KIOSK
-  ? 'Leave a short video message thanking our pioneers. Tap the button, get ready during the 3-2-1, and speak from the heart. About a minute is perfect. You can watch it back and record again before sending.'
-  : 'Record a short video message thanking our pioneers for their hard work, or share photos we can use in the video. You can watch it back and record again before sending.';
+  ? 'Leave a short video message thanking our pioneers. Tap the button, get ready during the 3-2-1, and speak from the heart. About a minute is perfect. You can watch it back and record again before saving.'
+  : 'Record a short video message thanking our pioneers for their hard work, or share photos we can use in the video. You can watch it back and record again before saving.';
 if (KIOSK) {
   $('phoneExtras').classList.add('hidden');
   $('doneBtns').classList.add('hidden');
   $('qrBox').classList.remove('hidden');
   try { new QRCode($('qrcode'), { text: location.origin + location.pathname + '?phone=1', width: 150, height: 150, colorDark: '#2d2a24', colorLight: '#ffffff' }); } catch (e) { $('qrBox').classList.add('hidden'); }
   keepAwake(); document.addEventListener('visibilitychange', () => { if (!document.hidden) keepAwake(); });
+  $('bSend').textContent = 'Save message ✓';
+  document.querySelector('#s-welcome .note').textContent = 'Your message is saved on this iPad for the pioneers\u2019 thank-you video.';
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
 } else {
   $('nameOpt').textContent = '';
   try { $('name').value = localStorage.getItem('pioneers_name') || ''; } catch (e) {}
@@ -272,7 +294,102 @@ $('bStop').onclick = stopRec;
 $('bCancel').onclick = () => { if (!KIOSK) stopStream(); home(); };
 function stopStream() { if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; }
 $('bRedo').onclick = () => { URL.revokeObjectURL($('playback').src); blob = null; $('bRecord').onclick(); };
-$('bSend').onclick = () => { $('playback').pause(); sendVideo(blob, 'Your video message'); };
+$('bSend').onclick = () => { $('playback').pause(); KIOSK ? saveVideo(blob) : sendVideo(blob, 'Your video message'); };
+
+// ---------- iPad: messages are SAVED ON THIS iPAD (IndexedDB, kept by the Home Screen app), not uploaded.
+// Get them off from the hidden admin screen: share sheet -> Save Video (Photos) / Save to Files / AirDrop, or upload to Drive.
+function db() {
+  return new Promise((ok, no) => {
+    const r = indexedDB.open('pioneers', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('messages', { keyPath: 'id' });
+    r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error);
+  });
+}
+async function tx(mode, fn) {
+  const d = await db();
+  return new Promise((ok, no) => { const t = d.transaction('messages', mode); const st = t.objectStore('messages'); const out = fn(st);
+    t.oncomplete = () => ok(out && out.result !== undefined ? out.result : out); t.onerror = () => no(t.error); t.onabort = () => no(t.error || new Error('Could not save.')); });
+}
+const allMsgs = () => tx('readonly', st => st.getAll());
+function fileName(m) {
+  const d = new Date(m.t), p = n => String(n).padStart(2, '0');
+  const ext = /webm/.test(m.mime) ? 'webm' : (/quicktime/.test(m.mime) ? 'mov' : 'mp4');
+  const who = (m.name || 'Friend').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 40);
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())} - ${who}${m.forWho ? ' for ' + m.forWho.replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 30) : ''}.${ext}`;
+}
+async function saveVideo(b) {
+  retryFn = () => saveVideo(b);
+  if (!b || !b.size) return fail(new Error('The recording came out empty.'));
+  $('sendTitle').textContent = 'Saving…'; $('sendWhat').textContent = ''; $('thumbs').innerHTML = ''; prog(0); show('sending');
+  try {
+    const m = Object.assign(meta(), { id: Date.now() + '-' + Math.random().toString(36).slice(2, 6), t: Date.now(), mime: b.type || 'video/mp4', size: b.size, blob: b, exported: false });
+    await tx('readwrite', st => st.put(m)); prog(1);
+    done('Your message was saved. The pioneers are going to love it.');
+  } catch (e) { $('errMsg').textContent = 'This iPad could not save the message (' + (e && e.message || e) + '). Please tell Branson.'; show('error'); }
+}
+
+// ---------- admin screen
+async function openAdmin() {
+  if (prompt('PIN') !== '2611') return;
+  clearInterval(resetT); show('admin'); renderAdmin();
+}
+async function renderAdmin() {
+  const ms = (await allMsgs()).sort((a, b) => a.t - b.t);
+  let free = '';
+  try { const e = await navigator.storage.estimate(); free = ' · about ' + ((e.quota - e.usage) / 1e9).toFixed(1) + ' GB of space left for the app'; } catch (e) {}
+  const mb = ms.reduce((a, m) => a + m.size, 0) / 1048576;
+  $('aSum').textContent = ms.length + ' message' + (ms.length === 1 ? '' : 's') + ' on this iPad (' + mb.toFixed(0) + ' MB) · ' + ms.filter(m => !m.exported).length + ' not saved out yet' + free;
+  $('aList').innerHTML = '';
+  ms.slice().reverse().forEach(m => {
+    const row = document.createElement('div'); row.className = 'msg';
+    row.innerHTML = `<div class="w"><b></b><span></span></div><button class="btn ghost">▶</button><button class="btn primary">Save</button>`;
+    row.querySelector('b').textContent = (m.name || 'Friend') + (m.forWho ? ' → ' + m.forWho : '');
+    row.querySelector('span').innerHTML = new Date(m.t).toLocaleString() + ' · ' + (m.size / 1048576).toFixed(0) + ' MB' + (m.exported ? '<i class="pill">saved out</i>' : '') + (m.uploaded ? '<i class="pill">on Drive</i>' : '');
+    const [bp, bs] = row.querySelectorAll('button');
+    bp.onclick = () => { $('playback').src = URL.createObjectURL(m.blob); show('review'); $('bRedo').classList.add('hidden'); $('bSend').textContent = '‹ Back to saved messages'; $('bSend').onclick = backToAdmin; $('playback').play(); };
+    bs.onclick = () => shareOut([m]);
+    $('aList').appendChild(row);
+  });
+}
+function backToAdmin() {
+  $('playback').pause(); $('bRedo').classList.remove('hidden'); $('bSend').textContent = 'Save message ✓';
+  $('bSend').onclick = () => { $('playback').pause(); saveVideo(blob); }; show('admin'); renderAdmin();
+}
+async function shareOut(list) {
+  if (!list.length) { $('aProg').textContent = 'Nothing new to save.'; return; }
+  const files = list.map(m => new File([m.blob], fileName(m), { type: m.mime }));
+  if (!(navigator.canShare && navigator.canShare({ files }))) {      // no share sheet: download them (iPad: Files > Downloads)
+    for (const f of files) { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); await sleep(700); }
+    await tx('readwrite', st => list.forEach(m => { m.exported = true; st.put(m); }));
+    $('aProg').textContent = 'Downloaded ' + list.length + ' (iPad: Files app > Downloads).'; renderAdmin(); return;
+  }
+  try {
+    await navigator.share({ files });                // share sheet: Save Video(s) -> Photos, Save to Files, AirDrop to the Mac
+    await tx('readwrite', st => list.forEach(m => { m.exported = true; st.put(m); }));
+    $('aProg').textContent = 'Saved ' + list.length + ' message' + (list.length === 1 ? '' : 's') + ' out (10 at a time: tap again for more). They stay in the app too until you delete them.';
+  } catch (e) { $('aProg').textContent = e && e.name === 'AbortError' ? 'Cancelled.' : 'Could not save: ' + (e && e.message || e); }
+  renderAdmin();
+}
+$('aShareAll').onclick = async () => shareOut((await allMsgs()).filter(m => !m.exported).sort((a, b) => a.t - b.t).slice(0, 10));
+$('aUpload').onclick = async () => {
+  const todo = (await allMsgs()).filter(m => !m.uploaded).sort((a, b) => a.t - b.t);
+  for (let i = 0; i < todo.length; i++) {
+    const m = todo[i];
+    try {
+      await upload(m.blob, { kind: 'message', name: m.name, forWho: m.forWho, kiosk: true, n: 0 }, f => $('aProg').textContent = 'Uploading ' + (i + 1) + ' of ' + todo.length + ' · ' + Math.round(f * 100) + '%');
+      m.uploaded = true; await tx('readwrite', st => st.put(m));
+    } catch (e) { $('aProg').textContent = 'Upload stopped at ' + (i + 1) + ' of ' + todo.length + ': ' + (e && e.message || e); renderAdmin(); return; }
+  }
+  $('aProg').textContent = todo.length ? 'All ' + todo.length + ' uploaded to Google Drive.' : 'Everything is already on Drive.'; renderAdmin();
+};
+$('aDelDone').onclick = async () => {
+  const done_ = (await allMsgs()).filter(m => m.exported || m.uploaded);
+  if (!done_.length) { $('aProg').textContent = 'Nothing has been saved out yet, so nothing was deleted.'; return; }
+  if (!confirm('Delete ' + done_.length + ' message(s) from this app? They were already saved to Photos / Files or Drive.')) return;
+  await tx('readwrite', st => done_.forEach(m => st.delete(m.id))); $('aProg').textContent = 'Deleted ' + done_.length + '.'; renderAdmin();
+};
+$('aReload').onclick = () => location.reload();
+$('aClose').onclick = () => home();
 
 // ---------- file pickers
 $('nativeCam').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) sendVideo(f, 'Your video message'); };
@@ -359,7 +476,9 @@ function home() {
 
 // kiosk: hold the top-left corner 3 s to reload (e.g. after the camera was unplugged)
 let holdT = null;
-$('admin').addEventListener('touchstart', () => { holdT = setTimeout(() => location.reload(), 3000); }, { passive: true });
+$('admin').addEventListener('touchstart', () => { holdT = setTimeout(() => KIOSK ? openAdmin() : location.reload(), 3000); }, { passive: true });
+$('admin').addEventListener('mousedown', () => { holdT = setTimeout(() => KIOSK ? openAdmin() : location.reload(), 3000); });
+$('admin').addEventListener('mouseup', () => clearTimeout(holdT));
 $('admin').addEventListener('touchend', () => clearTimeout(holdT));
 </script>
 </body>
